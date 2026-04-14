@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的小天气</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+        
+        .weather-card {
+            background-color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px;
+            width: 300px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        
+        .weather-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+        }
+        
+        .weather-card.flipped .weather-card-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .weather-card-front, .weather-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .weather-card-back {
+            transform: rotateY(180deg);
+            background-color: #e0f7fa;
+        }
+        
+        .weather-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .weather-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+        }
+        
+        .weather-card h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .weather-card p {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        /* 晴天符号 */
+        .sun {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            background-color: #ffeb3b;
+            border-radius: 50%;
+            margin: 20px auto;
+            box-shadow: 0 0 20px #ffeb3b;
+        }
+        
+        .sun::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 30px;
+            width: 10px;
+            height: 30px;
+            background-color: #ffeb3b;
+            border-radius: 5px;
+        }
+        
+        .sun::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 30px;
+            width: 10px;
+            height: 30px;
+            background-color: #ffeb3b;
+            border-radius: 5px;
+        }
+        
+        .sun span:nth-child(1) {
+            position: absolute;
+            left: -15px;
+            top: 30px;
+            width: 30px;
+            height: 10px;
+            background-color: #ffeb3b;
+            border-radius: 5px;
+        }
+        
+        .sun span:nth-child(2) {
+            position: absolute;
+            right: -15px;
+            top: 30px;
+            width: 30px;
+            height: 10px;
+            background-color: #ffeb3b;
+            border-radius: 5px;
+        }
+        
+        .sun span:nth-child(3) {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 20px;
+            height: 20px;
+            background-color: #ffeb3b;
+            transform: rotate(45deg);
+        }
+        
+        .sun span:nth-child(4) {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 20px;
+            height: 20px;
+            background-color: #ffeb3b;
+            transform: rotate(45deg);
+        }
+        
+        .sun span:nth-child(5) {
+            position: absolute;
+            bottom: -10px;
+            left: -10px;
+            width: 20px;
+            height: 20px;
+            background-color: #ffeb3b;
+            transform: rotate(45deg);
+        }
+        
+        .sun span:nth-child(6) {
+            position: absolute;
+            bottom: -10px;
+            right: -10px;
+            width: 20px;
+            height: 20px;
+            background-color: #ffeb3b;
+            transform: rotate(45deg);
+        }
+        
+        /* 雨天符号 */
+        .rain {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin: 20px auto;
+        }
+        
+        .cloud {
+            position: relative;
+            width: 60px;
+            height: 40px;
+            background-color: #9e9e9e;
+            border-radius: 20px;
+            margin: 0 auto;
+        }
+        
+        .cloud::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 10px;
+            width: 30px;
+            height: 30px;
+            background-color: #9e9e9e;
+            border-radius: 50%;
+        }
+        
+        .cloud::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            background-color: #9e9e9e;
+            border-radius: 50%;
+        }
+        
+        .raindrop {
+            position: absolute;
+            bottom: -20px;
+            width: 8px;
+            height: 15px;
+            background-color: #2196f3;
+            border-radius: 4px;
+            animation: rain 1s infinite linear;
+        }
+        
+        .raindrop:nth-child(2) {
+            left: 25px;
+            animation-delay: 0.2s;
+        }
+        
+        .raindrop:nth-child(3) {
+            left: 40px;
+            animation-delay: 0.4s;
+        }
+        
+        .raindrop:nth-child(4) {
+            left: 55px;
+            animation-delay: 0.6s;
+        }
+        
+        @keyframes rain {
+            0% {
+                transform: translateY(0) rotate(15deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(30px) rotate(15deg);
+                opacity: 0;
+            }
+        }
+        
+        /* 多云符号 */
+        .cloudy {
+            position: relative;
+            width: 100px;
+            height: 60px;
+            margin: 20px auto;
+        }
+        
+        .cloudy .cloud {
+            width: 80px;
+            height: 50px;
+            background-color: #bdbdbd;
+            border-radius: 25px;
+        }
+        
+        .cloudy .cloud::before {
+            top: -20px;
+            left: 15px;
+            width: 40px;
+            height: 40px;
+        }
+        
+        .cloudy .cloud::after {
+            top: -15px;
+            right: 15px;
+            width: 50px;
+            height: 50px;
+        }
+        
+        .cloudy .sun-small {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background-color: #ffeb3b;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; margin-bottom: 30px; color: #333;">天气符号示例</h1>
+    
+    <div class="container">
+        <!-- 晴天 -->
+        <div class="weather-card" id="sunny">
+            <div class="weather-card-inner">
+                <div class="weather-card-front">
+                    <h2 onclick="flipCard('sunny')">晴天</h2>
+                    <div class="weather-icon">
+                        <div class="sun">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                    <p>阳光明媚，适合户外活动</p>
+                </div>
+                <div class="weather-card-back">
+                    <h2>晴天详情</h2>
+                    <p>温度：25°C - 30°C</p>
+                    <p>湿度：40%</p>
+                    <p>风速：5 km/h</p>
+                    <button onclick="flipCard('sunny')">返回</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 雨天 -->
+        <div class="weather-card" id="rainy">
+            <div class="weather-card-inner">
+                <div class="weather-card-front">
+                    <h2 onclick="flipCard('rainy')">雨天</h2>
+                    <div class="weather-icon">
+                        <div class="rain">
+                            <div class="cloud"></div>
+                            <div class="raindrop"></div>
+                            <div class="raindrop"></div>
+                            <div class="raindrop"></div>
+                        </div>
+                    </div>
+                    <p>有雨，出门请带伞</p>
+                </div>
+                <div class="weather-card-back">
+                    <h2>雨天详情</h2>
+                    <p>温度：18°C - 22°C</p>
+                    <p>湿度：80%</p>
+                    <p>风速：10 km/h</p>
+                    <button onclick="flipCard('rainy')">返回</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 多云 -->
+        <div class="weather-card" id="cloudy">
+            <div class="weather-card-inner">
+                <div class="weather-card-front">
+                    <h2 onclick="flipCard('cloudy')">多云</h2>
+                    <div class="weather-icon">
+                        <div class="cloudy">
+                            <div class="cloud"></div>
+                            <div class="sun-small"></div>
+                        </div>
+                    </div>
+                    <p>多云天气，温度适宜</p>
+                </div>
+                <div class="weather-card-back">
+                    <h2>多云详情</h2>
+                    <p>温度：20°C - 25°C</p>
+                    <p>湿度：60%</p>
+                    <p>风速：8 km/h</p>
+                    <button onclick="flipCard('cloudy')">返回</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function flipCard(cardId) {
+            const card = document.getElementById(cardId);
+            card.classList.toggle('flipped');
+        }
+    </script>
+</body>
+</html>
