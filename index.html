@@ -1,35 +1,202 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>wangzi的作品集</title>
     <style>
-        body.dark {
-            background-color: #000;
-            color: #fff;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            background-color: #f8f9fa;
+            color: #333;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        body.dark {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        body.dark .header h1 {
+            color: #f8f9fa;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            color: #7f8c8d;
+        }
+        
+        body.dark .header p {
+            color: #b0b0b0;
+        }
+        
+        .projects {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        
+        .project-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            text-align: center;
+        }
+        
+        body.dark .project-card {
+            background: #1e1e1e;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        body.dark .project-card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+        }
+        
+        .project-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        body.dark .project-card h3 {
+            color: #f8f9fa;
+        }
+        
+        .project-card p {
+            color: #7f8c8d;
+            font-size: 1rem;
+        }
+        
+        body.dark .project-card p {
+            color: #b0b0b0;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #95a5a6;
+            font-size: 0.9rem;
+        }
+        
+        body.dark .footer {
+            color: #7f8f8f;
+        }
+        
         button {
-            margin: 16px;
-            padding: 8px 16px;
-            font-size: 16px;
-            border-radius: 10px;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 25px;
             background-color: deepskyblue;
             border: none;
             color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            z-index: 1000;
+        }
+        
+        button:hover {
+            background-color: #00bfff;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .projects {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .project-card {
+                padding: 20px;
+            }
         }
     </style>
 </head>
 <body>
     <button id="toggleThemeBtn">切换深色模式</button>
-    <h1>hello Github,我要开始学前端啦！</h1>
-    <p>这是我在daily-code 仓库里的第一个页面</p>
+    
+    <div class="container">
+        <header class="header">
+            <h1>👋 我是wangzi，一名前端学习者</h1>
+            <p>这里是我正在做的项目</p>
+        </header>
+        
+        <section class="projects">
+            <div class="project-card" onclick="window.location.href='weather.html'">
+                <h3>🌤️ 西安实时天气</h3>
+                <p>真实API · 动态渲染 · 3D翻转</p>
+                <div style="margin-top: 15px; font-size: 0.85rem; color: #666;">
+                    <span style="background: rgba(135, 207, 235, 0.2); padding: 4px 8px; border-radius: 12px; margin: 2px;">和风天气API</span>
+                    <span style="background: rgba(255, 193, 7, 0.2); padding: 4px 8px; border-radius: 12px; margin: 2px;">玻璃拟态</span>
+                    <span style="background: rgba(76, 175, 80, 0.2); padding: 4px 8px; border-radius: 12px; margin: 2px;">响应式</span>
+                </div>
+            </div>
+            
+            <div class="project-card" onclick="toggleTheme()">
+                <h3>🌙 暗黑模式演示</h3>
+                <p>原生JS · 主题切换 · 平滑过渡</p>
+            </div>
+        </section>
+        
+        <footer class="footer">
+            GitHub · Vercel · 持续更新中
+        </footer>
+    </div>
+    
     <script>
         const button = document.getElementById('toggleThemeBtn');
-        button.addEventListener('click', () => {
+        
+        function toggleTheme() {
             document.body.classList.toggle('dark');
+            updateButtonText();
+        }
+        
+        function updateButtonText() {
             button.textContent = document.body.classList.contains('dark') ? '恢复浅色模式' : '切换深色模式';
-        });
+        }
+        
+        button.addEventListener('click', toggleTheme);
+        
+        // 初始化按钮文字
+        updateButtonText();
     </script>
 </body>
 </html>
