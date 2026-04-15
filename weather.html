@@ -3,28 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>西安天气卡片</title>
+    <title>天气的心情 · 玻璃窗外</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
-            background: linear-gradient(145deg, #1a2a3a 0%, #0f1a24 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
             padding: 20px;
+            position: relative;
+            overflow: hidden;
         }
-        /* 卡片容器 */
+
+        /* 视频背景层 */
+        .video-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
+        /* 后备背景色 */
+        body.weather-sunny { background: radial-gradient(circle at 20% 30%, #fff4d0, #cbe6f0, #a1cce0); }
+        body.weather-rainy { background: radial-gradient(circle at 80% 20%, #4a5a6a, #2a3a4a, #1a2a3a); }
+        body.weather-cloudy { background: radial-gradient(circle at 50% 50%, #c0c8cc, #a8b0b8, #8a949c); }
+
+        /* 动画叠加层 */
+        .weather-fx {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* 阳光光束 */
+        .sunbeam {
+            position: absolute;
+            top: -20%;
+            right: -10%;
+            width: 60%;
+            height: 120%;
+            background: linear-gradient(135deg, rgba(255, 255, 200, 0.25) 0%, rgba(255, 255, 200, 0.02) 80%);
+            transform: rotate(15deg);
+            filter: blur(20px);
+            animation: sunbeam-sway 12s ease-in-out infinite alternate;
+            opacity: 0;
+        }
+        body.weather-sunny .sunbeam { opacity: 1; }
+        @keyframes sunbeam-sway {
+            0% { transform: rotate(10deg) scale(1.05); }
+            100% { transform: rotate(18deg) scale(1); }
+        }
+
+        /* 雨滴 */
+        .rain-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+        }
+        body.weather-rainy .rain-container { opacity: 1; }
+        .raindrop-bg {
+            position: absolute;
+            width: 1px;
+            height: 40px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0.4));
+            border-radius: 0 0 50% 50%;
+            animation: rain-fall 1.2s linear infinite;
+        }
+        @keyframes rain-fall {
+            0% { transform: translateY(-20px); opacity: 0; }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.8; }
+            100% { transform: translateY(120vh); opacity: 0; }
+        }
+
+        /* 水痕 */
+        .water-streak {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.02) 8px, rgba(255,255,255,0.04) 10px);
+            opacity: 0;
+        }
+        body.weather-rainy .water-streak { opacity: 1; }
+
+        /* 雾气 */
+        .mist {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40%;
+            background: linear-gradient(to top, rgba(200,210,220,0.15), transparent);
+            filter: blur(30px);
+            opacity: 0;
+        }
+        body.weather-rainy .mist,
+        body.weather-cloudy .mist { opacity: 0.6; }
+
+        /* 毛玻璃卡片 */
         .card-container {
             perspective: 1800px;
             width: 100%;
             max-width: 380px;
             cursor: pointer;
+            z-index: 10;
         }
         .flip-card {
             position: relative;
@@ -34,18 +136,18 @@
             transform-style: preserve-3d;
             border-radius: 48px;
         }
-        .flip-card.flipped {
-            transform: rotateY(180deg);
-        }
+        .flip-card.flipped { transform: rotateY(180deg); }
         .card-front, .card-back {
             position: absolute;
             width: 100%;
             height: 100%;
             backface-visibility: hidden;
             border-radius: 48px;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.35);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
         }
         .card-front {
             transform: rotateY(0deg);
@@ -55,12 +157,16 @@
             padding: 28px 22px 30px 22px;
             color: #fff;
         }
+        body.weather-sunny .card-front {
+            box-shadow: inset 0 0 60px rgba(255, 235, 140, 0.2), 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
         .card-back {
-            background: rgba(30, 35, 45, 0.45);
+            background: rgba(30, 35, 45, 0.5);
             transform: rotateY(180deg);
             padding: 28px 24px 32px 24px;
             color: #fefefe;
         }
+
         .city-name {
             font-size: 2.3rem;
             font-weight: 600;
@@ -75,9 +181,7 @@
             text-align: center;
             color: white;
         }
-        .temp-unit {
-            font-size: 1.9rem;
-        }
+        .temp-unit { font-size: 1.9rem; }
         .condition-text {
             font-size: 1.35rem;
             text-align: center;
@@ -110,6 +214,7 @@
             font-size: 0.7rem;
             color: white;
             pointer-events: none;
+            z-index: 20;
         }
         .back-title {
             font-size: 1.7rem;
@@ -141,6 +246,7 @@
             padding-top: 16px;
             border-top: 0.5px solid rgba(255,255,255,0.2);
         }
+
         .loading-state {
             display: flex;
             flex-direction: column;
@@ -157,9 +263,7 @@
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
         .error-state {
             text-align: center;
             padding: 20px;
@@ -177,13 +281,25 @@
     </style>
 </head>
 <body>
+
+<video class="video-bg" id="bgVideo" autoplay loop muted playsinline>
+    <source src="videos/cloudy.mp4" type="video/mp4">
+</video>
+
+<div class="weather-fx">
+    <div class="sunbeam"></div>
+    <div class="rain-container" id="rainContainer"></div>
+    <div class="water-streak"></div>
+    <div class="mist"></div>
+</div>
+
 <div class="card-container">
     <div class="flip-card" id="flipCard">
         <div class="card-front" id="cardFront">
             <div id="frontContent" style="display: flex; flex-direction: column; height: 100%;">
                 <div class="loading-state">
                     <div class="spinner"></div>
-                    <div>Loading weather data...</div>
+                    <div>Loading weather...</div>
                 </div>
             </div>
             <div class="tap-hint">Click to flip</div>
@@ -200,117 +316,121 @@
 </div>
 
 <script>
-    // Hefeng Weather API Configuration
+    // API 配置
     const API_KEY = '0d8df58ac126426a949380cba287f26e';
     const LOCATION_ID = '101110101';
-    const API_URL = 'https://n83wt3ehbm.re.qweatherapi.com/v7/weather/now';
+    const API_URL_NOW = 'https://n83wt3ehbm.re.qweatherapi.com/v7/weather/now';
+    const API_URL_3D = 'https://n83wt3ehbm.re.qweatherapi.com/v7/weather/3d';
+
+    const bgVideo = document.getElementById('bgVideo');
+
+    function setWeatherVideo(weatherType) {
+        let videoFile = 'cloudy.mp4';
+        if (weatherType.includes('sunny')) videoFile = 'sunny.mp4';
+        else if (weatherType.includes('rainy')) videoFile = 'rainy.mp4';
+        else if (weatherType.includes('cloudy')) videoFile = 'cloudy.mp4';
+        
+        const source = bgVideo.querySelector('source');
+        if (source) {
+            source.src = `videos/${videoFile}`;
+            bgVideo.load();
+            bgVideo.play().catch(e => console.log('使用CSS背景'));
+        }
+    }
+
+    function getWeatherIcon(code) {
+        const sunny = ['100', '101', '102', '103'];
+        const cloudy = ['104', '150', '151'];
+        const rainy = ['300', '301', '302', '303', '304', '305', '306', '307', '308', '309', '310', '311', '312', '313'];
+        if (sunny.includes(code)) return '☀️';
+        if (cloudy.includes(code)) return '☁️';
+        if (rainy.includes(code)) return '🌧️';
+        return '🌡️';
+    }
+
+    function generateRain() {
+        const container = document.getElementById('rainContainer');
+        container.innerHTML = '';
+        for (let i = 0; i < 50; i++) {
+            const drop = document.createElement('div');
+            drop.className = 'raindrop-bg';
+            drop.style.left = Math.random() * 100 + '%';
+            drop.style.animationDelay = Math.random() * 2 + 's';
+            drop.style.animationDuration = (1 + Math.random() * 0.8) + 's';
+            container.appendChild(drop);
+        }
+    }
+
+    function applyWeatherEffects(desc) {
+        const body = document.body;
+        body.className = '';
+        
+        const lower = desc.toLowerCase();
+        let weatherType = 'cloudy';
+        if (lower.includes('晴')) weatherType = 'sunny';
+        else if (lower.includes('雨')) weatherType = 'rainy';
+        else if (lower.includes('云') || lower.includes('阴')) weatherType = 'cloudy';
+        
+        body.classList.add(`weather-${weatherType}`);
+        setWeatherVideo(weatherType);
+        if (weatherType === 'rainy') generateRain();
+    }
 
     async function fetchWeather() {
-        const url = API_URL + '?location=' + LOCATION_ID + '&key=' + API_KEY;
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        if (data.code !== '200') {
-            throw new Error('API error: ' + data.code);
+        try {
+            const [nowResp, forecastResp] = await Promise.all([
+                fetch(`${API_URL_NOW}?location=${LOCATION_ID}&key=${API_KEY}`),
+                fetch(`${API_URL_3D}?location=${LOCATION_ID}&key=${API_KEY}`)
+            ]);
+            if (!nowResp.ok || !forecastResp.ok) throw new Error('API 请求失败');
+            const nowData = await nowResp.json();
+            const forecastData = await forecastResp.json();
+            if (nowData.code !== '200' || forecastData.code !== '200') throw new Error('API 返回错误');
+            return { now: nowData.now, today: forecastData.daily[0] };
+        } catch (err) {
+            console.error(err);
+            throw err;
         }
-        return data;
     }
 
     async function updateCard() {
         const frontDiv = document.getElementById('frontContent');
         const backDiv = document.getElementById('backContent');
-        
         try {
-            const weather = await fetchWeather();
-            const now = weather.now;
+            const data = await fetchWeather();
+            const now = data.now;
+            const today = data.today;
+            applyWeatherEffects(now.text);
             
-            // Update front
             frontDiv.innerHTML = `
-                <div>
-                    <div class="city-name">Xi'an</div>
-                    <div style="font-size:0.75rem; opacity:0.8; margin-top:4px;">Real-time Weather</div>
-                </div>
-                <div style="text-align:center;">
-                    <div style="font-size:5rem;">${getWeatherIcon(now.icon)}</div>
-                    <div class="temp-big">${now.temp}<span class="temp-unit">°C</span></div>
-                    <div class="condition-text">${now.text}</div>
-                </div>
-                <div class="front-footer">
-                    <div class="hint">Humidity ${now.humidity}%</div>
-                    <div class="hint">Wind ${now.windSpeed} km/h</div>
-                </div>
+                <div><div class="city-name">Xi'an</div><div style="font-size:0.75rem; opacity:0.8; margin-top:4px;">Real-time Weather</div></div>
+                <div style="text-align:center;"><div style="font-size:5rem;">${getWeatherIcon(now.icon)}</div><div class="temp-big">${now.temp}<span class="temp-unit">°C</span></div><div class="condition-text">${now.text}</div></div>
+                <div class="front-footer"><div class="hint">Humidity ${now.humidity}%</div><div class="hint">Wind ${now.windSpeed} km/h</div></div>
             `;
-            
-            // Update back
             backDiv.innerHTML = `
                 <div class="back-title">Weather Details</div>
                 <div class="details-grid">
-                    <div class="detail-item">
-                        <span>Humidity</span>
-                        <span class="detail-value">${now.humidity}%</span>
-                    </div>
-                    <div class="detail-item">
-                        <span>Wind Speed</span>
-                        <span class="detail-value">${now.windSpeed} km/h</span>
-                    </div>
-                    <div class="detail-item">
-                        <span>Feels Like</span>
-                        <span class="detail-value">${now.feelsLike}°C</span>
-                    </div>
-                    <div class="detail-item">
-                        <span>Precipitation</span>
-                        <span class="detail-value">${now.precip || '0'} mm</span>
-                    </div>
+                    <div class="detail-item"><span>High / Low</span><span class="detail-value">${today.tempMax}° / ${today.tempMin}°</span></div>
+                    <div class="detail-item"><span>Humidity</span><span class="detail-value">${now.humidity}%</span></div>
+                    <div class="detail-item"><span>Wind Speed</span><span class="detail-value">${now.windSpeed} km/h</span></div>
+                    <div class="detail-item"><span>Feels Like</span><span class="detail-value">${now.feelsLike}°C</span></div>
                 </div>
-                <div class="back-footer">
-                    <span>Powered by QWeather</span>
-                </div>
+                <div class="back-footer"><span>Powered by QWeather</span></div>
             `;
-            
         } catch (err) {
-            console.error(err);
-            frontDiv.innerHTML = `
-                <div class="error-state">
-                    <div>Failed to load weather</div>
-                    <div style="font-size:0.8rem;">${err.message}</div>
-                    <button class="retry-btn" onclick="location.reload()">Retry</button>
-                </div>
-            `;
-            backDiv.innerHTML = `
-                <div class="error-state">
-                    <div>Data unavailable</div>
-                    <button class="retry-btn" onclick="location.reload()">Retry</button>
-                </div>
-            `;
+            frontDiv.innerHTML = `<div class="error-state"><div>Failed to load weather</div><button class="retry-btn" onclick="location.reload()">Retry</button></div>`;
+            backDiv.innerHTML = `<div class="error-state"><div>Data unavailable</div><button class="retry-btn" onclick="location.reload()">Retry</button></div>`;
         }
     }
-    
-    function getWeatherIcon(code) {
-        // Simple icon mapping for Hefeng weather codes
-        const sunny = ['100', '101', '102', '103'];
-        const cloudy = ['104', '150', '151'];
-        const rainy = ['300', '301', '302', '303', '304', '305', '306', '307', '308', '309', '310', '311', '312', '313'];
-        const snowy = ['400', '401', '402', '403', '404', '405', '406'];
-        
-        if (sunny.includes(code)) return '☀️';
-        if (cloudy.includes(code)) return '☁️';
-        if (rainy.includes(code)) return '🌧️';
-        if (snowy.includes(code)) return '❄️';
-        return '🌡️';
-    }
-    
-    // Flip animation
+
     let isAnimating = false;
-    const flipCard = document.getElementById('flipCard');
-    
-    flipCard.addEventListener('click', function() {
+    document.getElementById('flipCard').addEventListener('click', function() {
         if (isAnimating) return;
         isAnimating = true;
-        flipCard.classList.toggle('flipped');
-        setTimeout(function() { isAnimating = false; }, 650);
+        this.classList.toggle('flipped');
+        setTimeout(() => isAnimating = false, 650);
     });
-    
-    // Load data
+
     updateCard();
 </script>
 </body>
