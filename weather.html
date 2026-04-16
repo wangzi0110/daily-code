@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>天气的心情 · 玻璃窗外</title>
     <style>
+        /* 全局重置 */
         * {
             margin: 0;
             padding: 0;
@@ -16,28 +18,37 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-            padding: 20px;
-            position: relative;
+            gap: 40px;
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
             overflow: hidden;
+            background: #f0f0f0;
         }
 
-        /* 视频背景层 */
+        /* 动态背景 */
         .video-bg {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -2;
             object-fit: cover;
+            z-index: -2;
+            filter: brightness(0.8) contrast(1.1);
             pointer-events: none;
         }
 
         /* 后备背景色 */
-        body.weather-sunny { background: radial-gradient(circle at 20% 30%, #fff4d0, #cbe6f0, #a1cce0); }
-        body.weather-rainy { background: radial-gradient(circle at 80% 20%, #4a5a6a, #2a3a4a, #1a2a3a); }
-        body.weather-cloudy { background: radial-gradient(circle at 50% 50%, #c0c8cc, #a8b0b8, #8a949c); }
+        body.weather-sunny {
+            background: linear-gradient(135deg, #f5f7fa 0%, #f9e79f 100%);
+        }
+
+        body.weather-cloudy {
+            background: linear-gradient(135deg, #eef2f3 0%, #8e9eab 100%);
+        }
+
+        body.weather-rainy {
+            background: linear-gradient(135deg, #dfe9f3 0%, #4a6274 100%);
+        }
 
         /* 动画叠加层 */
         .weather-fx {
@@ -63,10 +74,19 @@
             animation: sunbeam-sway 12s ease-in-out infinite alternate;
             opacity: 0;
         }
-        body.weather-sunny .sunbeam { opacity: 1; }
+
+        body.weather-sunny .sunbeam {
+            opacity: 1;
+        }
+
         @keyframes sunbeam-sway {
-            0% { transform: rotate(10deg) scale(1.05); }
-            100% { transform: rotate(18deg) scale(1); }
+            0% {
+                transform: rotate(10deg) scale(1.05);
+            }
+
+            100% {
+                transform: rotate(18deg) scale(1);
+            }
         }
 
         /* 雨滴 */
@@ -78,20 +98,38 @@
             height: 100%;
             opacity: 0;
         }
-        body.weather-rainy .rain-container { opacity: 1; }
+
+        body.weather-rainy .rain-container {
+            opacity: 1;
+        }
+
         .raindrop-bg {
             position: absolute;
             width: 1px;
             height: 40px;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0.4));
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.4));
             border-radius: 0 0 50% 50%;
             animation: rain-fall 1.2s linear infinite;
         }
+
         @keyframes rain-fall {
-            0% { transform: translateY(-20px); opacity: 0; }
-            10% { opacity: 0.8; }
-            90% { opacity: 0.8; }
-            100% { transform: translateY(120vh); opacity: 0; }
+            0% {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 0.8;
+            }
+
+            90% {
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: translateY(120vh);
+                opacity: 0;
+            }
         }
 
         /* 水痕 */
@@ -101,10 +139,13 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.02) 8px, rgba(255,255,255,0.04) 10px);
+            background: repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255, 255, 255, 0.02) 8px, rgba(255, 255, 255, 0.04) 10px);
             opacity: 0;
         }
-        body.weather-rainy .water-streak { opacity: 1; }
+
+        body.weather-rainy .water-streak {
+            opacity: 1;
+        }
 
         /* 雾气 */
         .mist {
@@ -113,109 +154,378 @@
             left: 0;
             width: 100%;
             height: 40%;
-            background: linear-gradient(to top, rgba(200,210,220,0.15), transparent);
+            background: linear-gradient(to top, rgba(200, 210, 220, 0.15), transparent);
             filter: blur(30px);
             opacity: 0;
         }
-        body.weather-rainy .mist,
-        body.weather-cloudy .mist { opacity: 0.6; }
 
-        /* 毛玻璃卡片 */
-        .card-container {
-            perspective: 1800px;
-            width: 100%;
-            max-width: 380px;
+        body.weather-rainy .mist,
+        body.weather-cloudy .mist {
+            opacity: 0.6;
+        }
+
+        /* 卡片容器 */
+        .weather-card-main {
+            width: 420px;
+            height: 588px;
+            /* 黄金比例 */
+            perspective: 1200px;
             cursor: pointer;
-            z-index: 10;
+            transition: all 0.3s ease;
         }
-        .flip-card {
-            position: relative;
+
+        .weather-card-main:hover {
+            transform: translateY(-4px);
+        }
+
+        .weather-card-guide {
+            width: 320px;
+            height: 480px;
+            perspective: 1200px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .weather-card-guide:hover {
+            transform: translateY(-4px);
+        }
+
+        /* 卡片内芯（翻转动画） */
+        .card-inner {
             width: 100%;
-            aspect-ratio: 3 / 4;
-            transition: transform 0.65s ease;
+            height: 100%;
+            position: relative;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
             transform-style: preserve-3d;
-            border-radius: 48px;
         }
-        .flip-card.flipped { transform: rotateY(180deg); }
-        .card-front, .card-back {
+
+        .card-inner.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-inner.flipping {
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
+        }
+
+        /* 正面通用样式（玻璃拟态精细化） */
+        .card-front,
+        .card-back {
             position: absolute;
             width: 100%;
             height: 100%;
+            -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
-            border-radius: 48px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-        }
-        .card-front {
-            transform: rotateY(0deg);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 28px 22px 30px 22px;
+            border-radius: 32px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow:
+                0 8px 32px rgba(31, 38, 135, 0.15),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+            padding: 32px;
+            box-sizing: border-box;
             color: #fff;
         }
-        body.weather-sunny .card-front {
-            box-shadow: inset 0 0 60px rgba(255, 235, 140, 0.2), 0 15px 35px rgba(0, 0, 0, 0.2);
+
+        /* 大卡片正面内容 */
+        .main-card-front {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
         }
-        .card-back {
-            background: rgba(30, 35, 45, 0.5);
-            transform: rotateY(180deg);
-            padding: 28px 24px 32px 24px;
-            color: #fefefe;
+
+        /* 城市信息（二级文字） */
+        .city-info {
+            align-self: flex-start;
+            margin-bottom: 32px;
+            animation: fadeInUp 0.6s ease 0.1s both;
         }
 
         .city-name {
-            font-size: 2.3rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, #FFFFFF, #FFEFCF);
-            background-clip: text;
-            -webkit-background-clip: text;
-            color: transparent;
+            font-size: 48px;
+            font-weight: 500;
+            line-height: 1.1;
+            color: #ffffff;
         }
-        .temp-big {
-            font-size: 4.6rem;
+
+        .city-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 4px;
+        }
+
+        /* 温度信息（一级核心） */
+        .temp-info {
+            margin-bottom: 32px;
+            animation: fadeInUp 0.6s ease 0.2s both;
+        }
+
+        .temp-icon {
+            font-size: 80px;
+            margin-bottom: 16px;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+            animation: iconGlow 3s ease-in-out infinite;
+        }
+
+        .temp-value {
+            font-size: 88px;
             font-weight: 700;
-            text-align: center;
-            color: white;
+            line-height: 1;
+            color: #ffffff;
         }
-        .temp-unit { font-size: 1.9rem; }
-        .condition-text {
-            font-size: 1.35rem;
-            text-align: center;
-            background: rgba(255,248,235,0.25);
-            padding: 6px 20px;
-            border-radius: 40px;
-            display: inline-block;
-            margin-top: 14px;
+
+        .temp-value span {
+            font-size: 48px;
+            /* 缩小℃，形成对比 */
+            font-weight: 500;
         }
-        .front-footer {
+
+        .weather-status {
+            margin-top: 16px;
+            padding: 8px 24px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            font-size: 24px;
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        /* 辅助信息（三级文字） */
+        .extra-info {
             display: flex;
             justify-content: space-between;
-            border-top: 0.5px solid rgba(255,255,255,0.3);
-            padding-top: 18px;
-            font-size: 0.85rem;
+            width: 100%;
+            margin-top: 32px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeInUp 0.6s ease 0.3s both;
         }
-        .hint {
-            background: rgba(0,0,0,0.2);
-            padding: 6px 14px;
-            border-radius: 40px;
+
+        .info-item {
+            padding: 8px 16px;
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            font-size: 16px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.8);
         }
-        .tap-hint {
+
+        /* 按钮样式（统一+呼吸动画） */
+        .flip-btn {
             position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(12px);
-            border-radius: 40px;
-            padding: 6px 14px;
-            font-size: 0.7rem;
-            color: white;
-            pointer-events: none;
-            z-index: 20;
+            bottom: 24px;
+            right: 24px;
+            padding: 8px 20px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: breathe 2s ease-in-out infinite;
         }
+
+        .flip-btn:hover {
+            background: rgba(0, 0, 0, 0.5);
+            transform: scale(1.05);
+            animation: none;
+        }
+
+        /* 小卡片正面内容 */
+        .guide-card-front {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            gap: 24px;
+        }
+
+        .guide-text {
+            font-size: 24px;
+            font-weight: 600;
+            line-height: 1.6;
+            color: #fff;
+            animation: fadeInUp 0.6s ease 0.1s both;
+        }
+
+        .guide-btn {
+            padding: 10px 28px;
+            border-radius: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: breathe 2s ease-in-out infinite;
+        }
+
+        .guide-btn:hover {
+            background: rgba(0, 0, 0, 0.5);
+            transform: scale(1.05);
+            animation: none;
+        }
+
+        /* 背面诗句样式 */
+        .card-back {
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-family: "思源宋体", serif;
+            font-size: 28px;
+            line-height: 1.8;
+            letter-spacing: 1px;
+            color: #fff;
+        }
+
+        /* 诗句动画效果 */
+        .poem {
+            animation: fadeIn 1.2s ease forwards;
+            white-space: normal;
+            overflow: visible;
+            line-height: 2;
+            padding: 0 10px;
+        }
+
+        .poem-icon {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            animation: iconGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes typing {
+            from {
+                width: 0;
+            }
+
+            to {
+                width: 100%;
+            }
+        }
+
+        @keyframes iconGlow {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.5));
+            }
+        }
+
+        /* 大卡片背面 */
+        .weather-card-main .card-back {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            letter-spacing: normal;
+        }
+
+        /* 小卡片背面 */
+        .weather-card-guide .card-back {
+            padding: 24px;
+        }
+
+        /* 动画关键帧 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes breathe {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        /* 卡片浮动动画 */
+        .weather-card-main,
+        .weather-card-guide {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-6px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                padding: 20px;
+                gap: 20px;
+            }
+
+            .weather-card-main,
+            .weather-card-guide {
+                width: 90vw;
+                height: auto;
+                min-height: 500px;
+            }
+
+            .temp-value {
+                font-size: 64px;
+            }
+
+            .temp-value span {
+                font-size: 36px;
+            }
+
+            .city-name {
+                font-size: 36px;
+            }
+        }
+
         .back-title {
             font-size: 1.7rem;
             font-weight: 600;
@@ -223,28 +533,32 @@
             padding-left: 14px;
             margin-bottom: 20px;
         }
+
         .details-grid {
             display: flex;
             flex-direction: column;
             gap: 20px;
         }
+
         .detail-item {
             display: flex;
             justify-content: space-between;
             padding-bottom: 8px;
-            border-bottom: 0.5px solid rgba(255,255,255,0.25);
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.25);
         }
+
         .detail-value {
             font-weight: 620;
             font-size: 1.35rem;
             color: #FFECCC;
         }
+
         .back-footer {
             text-align: center;
             font-size: 0.7rem;
             margin-top: 20px;
             padding-top: 16px;
-            border-top: 0.5px solid rgba(255,255,255,0.2);
+            border-top: 0.5px solid rgba(255, 255, 255, 0.2);
         }
 
         .loading-state {
@@ -255,23 +569,31 @@
             height: 100%;
             gap: 16px;
         }
+
         .spinner {
             width: 40px;
             height: 40px;
-            border: 3px solid rgba(255,255,255,0.3);
+            border: 3px solid rgba(255, 255, 255, 0.3);
             border-top-color: white;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         .error-state {
             text-align: center;
             padding: 20px;
             color: #ffb347;
         }
+
         .retry-btn {
             margin-top: 12px;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             border: none;
             padding: 8px 20px;
             border-radius: 30px;
@@ -280,32 +602,30 @@
         }
     </style>
 </head>
+
 <body>
 
-<video class="video-bg" id="bgVideo" autoplay loop muted playsinline>
-    <source src="videos/cloudy.mp4" type="video/mp4">
-</video>
+    <video class="video-bg" id="bgVideo" autoplay loop muted playsinline>
+        <source src="videos/cloudy.mp4" type="video/mp4">
+    </video>
 
-<div class="weather-fx">
-    <div class="sunbeam"></div>
-    <div class="rain-container" id="rainContainer"></div>
-    <div class="water-streak"></div>
-    <div class="mist"></div>
-</div>
+    <div class="weather-fx">
+        <div class="sunbeam"></div>
+        <div class="rain-container" id="rainContainer"></div>
+        <div class="water-streak"></div>
+        <div class="mist"></div>
+    </div>
 
-<div class="card-container">
-    <div class="flip-card" id="flipCard">
-        <div class="card-front" id="cardFront">
-            <div id="frontContent" style="display: flex; flex-direction: column; height: 100%;">
-                <div class="loading-state">
-                    <div class="spinner"></div>
-                    <div>Loading weather...</div>
-                </div>
+    <!-- 小卡片 -->
+    <div class="weather-card-guide">
+        <div class="card-inner" id="poemCard">
+            <!-- 正面 -->
+            <div class="card-front guide-card-front">
+                <div class="guide-text">一触即翻，<br>天气与诗皆可见</div>
+                <button class="guide-btn">轻触翻面 · 遇见诗意</button>
             </div>
-            <div class="tap-hint">Click to flip</div>
-        </div>
-        <div class="card-back" id="cardBack">
-            <div id="backContent" style="display: flex; flex-direction: column; height: 100%;">
+            <!-- 背面 -->
+            <div class="card-back" id="poemCardBack">
                 <div class="loading-state">
                     <div class="spinner"></div>
                     <div>Loading...</div>
@@ -313,101 +633,145 @@
             </div>
         </div>
     </div>
-</div>
 
-<script>
-    // API 配置
-    const API_KEY = '0d8df58ac126426a949380cba287f26e';
-    const LOCATION_ID = '101110101';
-    const API_URL_NOW = 'https://n83wt3ehbm.re.qweatherapi.com/v7/weather/now';
-    const API_URL_3D = 'https://n83wt3ehbm.re.qweatherapi.com/v7/weather/3d';
+    <!-- 主卡片 -->
+    <div class="weather-card-main">
+        <div class="card-inner" id="flipCard">
+            <!-- 正面（天气信息） -->
+            <div class="card-front main-card-front" id="cardFront">
+                <div id="frontContent" style="display: flex; flex-direction: column; height: 100%;">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <div>Loading weather...</div>
+                    </div>
+                </div>
+                <button class="flip-btn">轻触翻面 · 遇见诗意</button>
+            </div>
+            <!-- 背面（天气详情） -->
+            <div class="card-back" id="cardBack">
+                <div id="backContent" style="display: flex; flex-direction: column; height: 100%;">
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <div>Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    const bgVideo = document.getElementById('bgVideo');
+    <script>
+        // API 配置
+        const API_KEY = '0d8df58ac126426a949380cba287f26e';
+        const LOCATION_ID = '101110101';
+        const API_URL_NOW = 'https://n83wt3ehbm.re.qweatherapi.com/v7/weather/now';
+        const API_URL_3D = 'https://n83wt3ehbm.re.qweatherapi.com/v7/weather/3d';
 
-    function setWeatherVideo(weatherType) {
-        let videoFile = 'cloudy.mp4';
-        if (weatherType.includes('sunny')) videoFile = 'sunny.mp4';
-        else if (weatherType.includes('rainy')) videoFile = 'rainy.mp4';
-        else if (weatherType.includes('cloudy')) videoFile = 'cloudy.mp4';
-        
-        const source = bgVideo.querySelector('source');
-        if (source) {
-            source.src = `videos/${videoFile}`;
-            bgVideo.load();
-            bgVideo.play().catch(e => console.log('使用CSS背景'));
+        const bgVideo = document.getElementById('bgVideo');
+
+        function setWeatherVideo(weatherType) {
+            let videoFile = 'cloudy.mp4';
+            if (weatherType.includes('sunny')) videoFile = 'sunny.mp4';
+            else if (weatherType.includes('rainy')) videoFile = 'rainy.mp4';
+            else if (weatherType.includes('cloudy')) videoFile = 'cloudy.mp4';
+
+            const source = bgVideo.querySelector('source');
+            if (source) {
+                source.src = `videos/${videoFile}`;
+                bgVideo.load();
+                bgVideo.play().catch(e => console.log('使用CSS背景'));
+            }
         }
-    }
 
-    function getWeatherIcon(code) {
-        const sunny = ['100', '101', '102', '103'];
-        const cloudy = ['104', '150', '151'];
-        const rainy = ['300', '301', '302', '303', '304', '305', '306', '307', '308', '309', '310', '311', '312', '313'];
-        if (sunny.includes(code)) return '☀️';
-        if (cloudy.includes(code)) return '☁️';
-        if (rainy.includes(code)) return '🌧️';
-        return '🌡️';
-    }
-
-    function generateRain() {
-        const container = document.getElementById('rainContainer');
-        container.innerHTML = '';
-        for (let i = 0; i < 50; i++) {
-            const drop = document.createElement('div');
-            drop.className = 'raindrop-bg';
-            drop.style.left = Math.random() * 100 + '%';
-            drop.style.animationDelay = Math.random() * 2 + 's';
-            drop.style.animationDuration = (1 + Math.random() * 0.8) + 's';
-            container.appendChild(drop);
+        function getWeatherIcon(code) {
+            const sunny = ['100', '101', '102', '103'];
+            const cloudy = ['104', '150', '151'];
+            const rainy = ['300', '301', '302', '303', '304', '305', '306', '307', '308', '309', '310', '311', '312', '313'];
+            if (sunny.includes(code)) return '☀️';
+            if (cloudy.includes(code)) return '☁️';
+            if (rainy.includes(code)) return '🌧️';
+            return '🌡️';
         }
-    }
 
-    function applyWeatherEffects(desc) {
-        const body = document.body;
-        body.className = '';
-        
-        const lower = desc.toLowerCase();
-        let weatherType = 'cloudy';
-        if (lower.includes('晴')) weatherType = 'sunny';
-        else if (lower.includes('雨')) weatherType = 'rainy';
-        else if (lower.includes('云') || lower.includes('阴')) weatherType = 'cloudy';
-        
-        body.classList.add(`weather-${weatherType}`);
-        setWeatherVideo(weatherType);
-        if (weatherType === 'rainy') generateRain();
-    }
-
-    async function fetchWeather() {
-        try {
-            const [nowResp, forecastResp] = await Promise.all([
-                fetch(`${API_URL_NOW}?location=${LOCATION_ID}&key=${API_KEY}`),
-                fetch(`${API_URL_3D}?location=${LOCATION_ID}&key=${API_KEY}`)
-            ]);
-            if (!nowResp.ok || !forecastResp.ok) throw new Error('API 请求失败');
-            const nowData = await nowResp.json();
-            const forecastData = await forecastResp.json();
-            if (nowData.code !== '200' || forecastData.code !== '200') throw new Error('API 返回错误');
-            return { now: nowData.now, today: forecastData.daily[0] };
-        } catch (err) {
-            console.error(err);
-            throw err;
+        function generateRain() {
+            const container = document.getElementById('rainContainer');
+            container.innerHTML = '';
+            for (let i = 0; i < 50; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'raindrop-bg';
+                drop.style.left = Math.random() * 100 + '%';
+                drop.style.animationDelay = Math.random() * 2 + 's';
+                drop.style.animationDuration = (1 + Math.random() * 0.8) + 's';
+                container.appendChild(drop);
+            }
         }
-    }
 
-    async function updateCard() {
-        const frontDiv = document.getElementById('frontContent');
-        const backDiv = document.getElementById('backContent');
-        try {
-            const data = await fetchWeather();
-            const now = data.now;
-            const today = data.today;
-            applyWeatherEffects(now.text);
-            
-            frontDiv.innerHTML = `
-                <div><div class="city-name">Xi'an</div><div style="font-size:0.75rem; opacity:0.8; margin-top:4px;">Real-time Weather</div></div>
-                <div style="text-align:center;"><div style="font-size:5rem;">${getWeatherIcon(now.icon)}</div><div class="temp-big">${now.temp}<span class="temp-unit">°C</span></div><div class="condition-text">${now.text}</div></div>
-                <div class="front-footer"><div class="hint">Humidity ${now.humidity}%</div><div class="hint">Wind ${now.windSpeed} km/h</div></div>
+        function applyWeatherEffects(desc) {
+            const body = document.body;
+            body.className = '';
+
+            const lower = desc.toLowerCase();
+            let weatherType = 'cloudy';
+            if (lower.includes('晴')) weatherType = 'sunny';
+            else if (lower.includes('雨')) weatherType = 'rainy';
+            else if (lower.includes('云') || lower.includes('阴')) weatherType = 'cloudy';
+
+            body.classList.add(`weather-${weatherType}`);
+            setWeatherVideo(weatherType);
+            if (weatherType === 'rainy') generateRain();
+        }
+
+        async function fetchWeather() {
+            try {
+                const [nowResp, forecastResp] = await Promise.all([
+                    fetch(`${API_URL_NOW}?location=${LOCATION_ID}&key=${API_KEY}`),
+                    fetch(`${API_URL_3D}?location=${LOCATION_ID}&key=${API_KEY}`)
+                ]);
+                if (!nowResp.ok || !forecastResp.ok) throw new Error('API 请求失败');
+                const nowData = await nowResp.json();
+                const forecastData = await forecastResp.json();
+                if (nowData.code !== '200' || forecastData.code !== '200') throw new Error('API 返回错误');
+                return { now: nowData.now, today: forecastData.daily[0] };
+            } catch (err) {
+                console.error(err);
+                throw err;
+            }
+        }
+
+        async function updateCard() {
+            const frontDiv = document.getElementById('frontContent');
+            const backDiv = document.getElementById('backContent');
+            try {
+                const data = await fetchWeather();
+                const now = data.now;
+                const today = data.today;
+                applyWeatherEffects(now.text);
+
+                // 确定天气类型
+                const lower = now.text.toLowerCase();
+                let weatherType = 'cloudy';
+                if (lower.includes('晴')) weatherType = 'sunny';
+                else if (lower.includes('雨')) weatherType = 'rainy';
+                else if (lower.includes('云') || lower.includes('阴')) weatherType = 'cloudy';
+
+                // 更新小诗卡片
+                updatePoemCard(weatherType, now.text);
+
+                frontDiv.innerHTML = `
+                <div class="city-info">
+                    <div class="city-name">Xi'an</div>
+                    <div class="city-desc">Real-time Weather</div>
+                </div>
+                <div class="temp-info">
+                    <div class="temp-icon">${getWeatherIcon(now.icon)}</div>
+                    <div class="temp-value">${now.temp}<span>°C</span></div>
+                    <div class="weather-status">${now.text}</div>
+                </div>
+                <div class="extra-info">
+                    <div class="info-item">Humidity ${now.humidity}%</div>
+                    <div class="info-item">Wind ${now.windSpeed} km/h</div>
+                </div>
             `;
-            backDiv.innerHTML = `
+                backDiv.innerHTML = `
                 <div class="back-title">Weather Details</div>
                 <div class="details-grid">
                     <div class="detail-item"><span>High / Low</span><span class="detail-value">${today.tempMax}° / ${today.tempMin}°</span></div>
@@ -417,21 +781,102 @@
                 </div>
                 <div class="back-footer"><span>Powered by QWeather</span></div>
             `;
-        } catch (err) {
-            frontDiv.innerHTML = `<div class="error-state"><div>Failed to load weather</div><button class="retry-btn" onclick="location.reload()">Retry</button></div>`;
-            backDiv.innerHTML = `<div class="error-state"><div>Data unavailable</div><button class="retry-btn" onclick="location.reload()">Retry</button></div>`;
+            } catch (err) {
+                frontDiv.innerHTML = `<div class="error-state"><div>Failed to load weather</div><button class="retry-btn" onclick="location.reload()">Retry</button></div>`;
+                backDiv.innerHTML = `<div class="error-state"><div>Data unavailable</div><button class="retry-btn" onclick="location.reload()">Retry</button></div>`;
+
+                // 错误时默认显示多云诗句
+                updatePoemCard('cloudy', '多云');
+            }
         }
-    }
 
-    let isAnimating = false;
-    document.getElementById('flipCard').addEventListener('click', function() {
-        if (isAnimating) return;
-        isAnimating = true;
-        this.classList.toggle('flipped');
-        setTimeout(() => isAnimating = false, 650);
-    });
+        // 诗句数据
+        const poems = {
+            sunny: [
+                '阳光正好，微风不燥',
+                '人间晴朗，万物可爱',
+                '今日晴，宜收集快乐',
+                '风暖云轻，万事皆胜意',
+                '天光恰好，岁月温柔'
+            ],
+            cloudy: [
+                '云舒漫卷，心事缓缓',
+                '日子清淡，也自有温柔',
+                '阴天也浪漫，万物皆安然',
+                '云藏心事，风知温柔',
+                '不晴不雨，恰好安心'
+            ],
+            rainy: [
+                '雨落心安，万事皆缓',
+                '听雨落下，等风也等你',
+                '雨天适合，安静想你',
+                '细雨温柔，治愈所有',
+                '雨打窗台，温柔自来'
+            ]
+        };
 
-    updateCard();
-</script>
+        // 天气图标映射表
+        const weatherIconMap = {
+            "晴": "☀️",
+            "多云": "⛅",
+            "阴": "☁️",
+            "小雨": "🌧️",
+            "大雨": "⛈️"
+        };
+
+        // 天气图标
+        const weatherIcons = {
+            sunny: '☀️',
+            cloudy: '☁️',
+            rainy: '🌧️'
+        };
+
+        // 根据天气状态切换图标
+        function updateWeatherIcon(weatherStatus) {
+            return weatherIconMap[weatherStatus] || "⛅";
+        }
+
+        // 更新小诗卡片
+        function updatePoemCard(weatherType, weatherStatus) {
+            const poemCardBack = document.getElementById('poemCardBack');
+            const poemsList = poems[weatherType] || poems.cloudy;
+            const randomPoem = poemsList[Math.floor(Math.random() * poemsList.length)];
+            const icon = updateWeatherIcon(weatherStatus) || weatherIcons[weatherType] || weatherIcons.cloudy;
+
+            poemCardBack.innerHTML = `
+                <div class="poem-icon">${icon}</div>
+                <div class="poem poem-text">${randomPoem}</div>
+            `;
+        }
+
+        let isAnimating = false;
+
+        // 主卡片翻转
+        document.getElementById('flipCard').addEventListener('click', function () {
+            if (isAnimating) return;
+            isAnimating = true;
+            this.classList.add('flipping');
+            this.classList.toggle('flipped');
+            setTimeout(() => {
+                this.classList.remove('flipping');
+                isAnimating = false;
+            }, 800);
+        });
+
+        // 小诗卡片翻转
+        document.getElementById('poemCard').addEventListener('click', function () {
+            if (isAnimating) return;
+            isAnimating = true;
+            this.classList.add('flipping');
+            this.classList.toggle('flipped');
+            setTimeout(() => {
+                this.classList.remove('flipping');
+                isAnimating = false;
+            }, 800);
+        });
+
+        updateCard();
+    </script>
 </body>
+
 </html>
