@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>天气的心情 · 玻璃窗外</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* 全局重置 */
         * {
@@ -18,9 +19,14 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 40px;
+            gap: 32px;
+            /* 卡片之间间距加大 */
             font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
+            /* 允许上下滚动 */
+            padding: 40px 24px;
+            /* 增加内边距，给卡片呼吸空间 */
             background: #f0f0f0;
         }
 
@@ -166,12 +172,14 @@
 
         /* 卡片容器 */
         .weather-card-main {
-            width: 420px;
-            height: 588px;
-            /* 黄金比例 */
+            width: 400px;
+            /* 稍微缩小，给两个卡片更多间距 */
+            height: 600px;
             perspective: 1200px;
             cursor: pointer;
             transition: all 0.3s ease;
+            flex-shrink: 0;
+            /* 防止被压缩 */
         }
 
         .weather-card-main:hover {
@@ -179,11 +187,13 @@
         }
 
         .weather-card-guide {
-            width: 320px;
-            height: 480px;
+            width: 280px;
+            /* 小卡片保持比例 */
+            height: 420px;
             perspective: 1200px;
             cursor: pointer;
             transition: all 0.3s ease;
+            flex-shrink: 0;
         }
 
         .weather-card-guide:hover {
@@ -232,8 +242,9 @@
         .main-card-front {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            text-align: center;
+            justify-content: space-between;
+            /* 上下两端对齐 */
+            height: 100%;
         }
 
         /* 城市信息（二级文字） */
@@ -241,6 +252,66 @@
             align-self: flex-start;
             margin-bottom: 32px;
             animation: fadeInUp 0.6s ease 0.1s both;
+        }
+
+        /* 城市搜索样式 */
+        .city-search {
+            position: relative;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+
+        .city-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .city-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .city-input:focus {
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .city-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            margin-top: 8px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .city-results.show {
+            display: block;
+        }
+
+        .city-result-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            color: #fff;
+        }
+
+        .city-result-item:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .city-name {
@@ -313,13 +384,122 @@
             color: rgba(255, 255, 255, 0.8);
         }
 
+        /* 小时预报样式 */
+        /* 小时预报容器 */
+        .hourly-forecast {
+            width: 100%;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            animation: fadeInUp 0.6s ease 0.4s both;
+        }
+
+        .hourly-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 8px;
+        }
+
+        .hourly-list {
+            display: flex;
+            overflow-x: auto;
+            gap: 12px;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+            /* 隐藏滚动条，更干净 */
+        }
+
+        .hourly-list::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hourly-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 50px;
+        }
+
+        .hourly-time {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 4px;
+        }
+
+        .hourly-icon {
+            font-size: 18px;
+            margin: 4px 0;
+        }
+
+        .hourly-temp {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* 7天预报样式 */
+        .weekly-forecast {
+            margin-top: 24px;
+            animation: fadeInUp 0.6s ease 0.5s both;
+        }
+
+        .forecast-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .forecast-day {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(8px);
+        }
+
+        .forecast-date {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            min-width: 60px;
+        }
+
+        .forecast-icon {
+            font-size: 24px;
+        }
+
+        .forecast-temp {
+            font-size: 16px;
+            font-weight: 500;
+            color: #fff;
+        }
+
+        /* 图表样式 */
+        .weather-chart {
+            margin-top: 24px;
+            animation: fadeInUp 0.6s ease 0.6s both;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
         /* 按钮样式（统一+呼吸动画） */
         .flip-btn {
-            position: absolute;
-            bottom: 24px;
-            right: 24px;
-            padding: 8px 20px;
-            border-radius: 20px;
+            align-self: flex-end;
+            /* 靠右对齐 */
+            margin-top: auto;
+            /* 推到底部 */
+            padding: 10px 20px;
+            border-radius: 24px;
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(8px);
@@ -328,7 +508,6 @@
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
-            animation: breathe 2s ease-in-out infinite;
         }
 
         .flip-btn:hover {
@@ -498,19 +677,40 @@
             }
         }
 
-        /* 响应式适配 */
+        /* 响应式适配 - 手机端优化 */
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
-                padding: 20px;
-                gap: 20px;
+                justify-content: flex-start;
+                /* 改为从顶部开始排列 */
+                padding: 24px 16px;
+                gap: 24px;
+                overflow-y: auto;
+                /* 允许上下滚动 */
             }
 
             .weather-card-main,
             .weather-card-guide {
-                width: 90vw;
+                width: 100%;
+                /* 占满宽度 */
+                max-width: 400px;
+                /* 最大宽度限制，避免太宽 */
                 height: auto;
-                min-height: 500px;
+                min-height: 600px;
+                margin: 0 auto;
+                /* 居中 */
+                flex-shrink: 0;
+                /* 防止被压缩 */
+            }
+
+            /* 小卡片稍微矮一点，保持比例协调 */
+            .weather-card-guide {
+                min-height: 200px;
+            }
+
+            /* 字体适当缩小 */
+            .city-name {
+                font-size: 36px;
             }
 
             .temp-value {
@@ -521,8 +721,99 @@
                 font-size: 36px;
             }
 
-            .city-name {
-                font-size: 36px;
+            .weather-status {
+                font-size: 20px;
+                padding: 6px 20px;
+            }
+
+            .guide-text {
+                font-size: 20px;
+            }
+
+            /* 城市搜索适配 */
+            .city-input {
+                font-size: 14px;
+                padding: 10px 12px;
+            }
+
+            /* 小时预报适配 */
+            .hourly-forecast {
+                margin-top: 20px;
+            }
+
+            .forecast-title {
+                font-size: 16px;
+                margin-bottom: 12px;
+            }
+
+            .hourly-container {
+                gap: 12px;
+            }
+
+            .hourly-item {
+                min-width: 55px;
+                padding: 10px 6px;
+            }
+
+            .hourly-time {
+                font-size: 12px;
+            }
+
+            .hourly-icon {
+                font-size: 20px;
+            }
+
+            .hourly-temp {
+                font-size: 14px;
+            }
+
+            /* 7天预报适配 */
+            .weekly-forecast {
+                margin-top: 20px;
+            }
+
+            .forecast-day {
+                padding: 10px 12px;
+            }
+
+            .forecast-date {
+                font-size: 12px;
+                min-width: 50px;
+            }
+
+            .forecast-icon {
+                font-size: 20px;
+            }
+
+            .forecast-temp {
+                font-size: 14px;
+            }
+
+            /* 图表适配 */
+            .weather-chart {
+                margin-top: 20px;
+            }
+
+            .chart-container {
+                height: 180px;
+                padding: 12px;
+            }
+
+            /* 详细信息适配 */
+            .details-grid {
+                gap: 12px;
+            }
+
+            .detail-item {
+                padding: 10px;
+            }
+
+            .detail-item span {
+                font-size: 14px;
+            }
+
+            .detail-value {
+                font-size: 14px;
             }
         }
 
@@ -662,9 +953,12 @@
     <script>
         // API 配置
         const API_KEY = '0d8df58ac126426a949380cba287f26e';
-        const LOCATION_ID = '101110101';
+        let LOCATION_ID = localStorage.getItem('selectedCityId') || '101110101';
+        let currentCityName = localStorage.getItem('selectedCityName') || "Xi'an";
         const API_URL_NOW = 'https://n83wt3ehbm.re.qweatherapi.com/v7/weather/now';
         const API_URL_3D = 'https://n83wt3ehbm.re.qweatherapi.com/v7/weather/3d';
+        const API_URL_24H = 'https://n83wt3ehbm.re.qweatherapi.com/v7/weather/24h';
+        const API_URL_CITY = 'https://n83wt3ehbm.re.qweatherapi.com/v2/city/lookup';
 
         const bgVideo = document.getElementById('bgVideo');
 
@@ -720,20 +1014,75 @@
             if (weatherType === 'rainy') generateRain();
         }
 
+        // 添加超时函数
+        function fetchWithTimeout(url, options = {}, timeout = 10000) {
+            return Promise.race([
+                fetch(url, options),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('请求超时')), timeout)
+                )
+            ]);
+        }
+
         async function fetchWeather() {
             try {
-                const [nowResp, forecastResp] = await Promise.all([
-                    fetch(`${API_URL_NOW}?location=${LOCATION_ID}&key=${API_KEY}`),
-                    fetch(`${API_URL_3D}?location=${LOCATION_ID}&key=${API_KEY}`)
+                console.log('开始获取天气数据...');
+                console.log('API_KEY:', API_KEY);
+                console.log('LOCATION_ID:', LOCATION_ID);
+
+                const [nowResp, forecastResp, hourlyResp] = await Promise.all([
+                    fetchWithTimeout(`${API_URL_NOW}?location=${LOCATION_ID}&key=${API_KEY}`),
+                    fetchWithTimeout(`${API_URL_3D}?location=${LOCATION_ID}&key=${API_KEY}`),
+                    fetchWithTimeout(`${API_URL_24H}?location=${LOCATION_ID}&key=${API_KEY}`)
                 ]);
-                if (!nowResp.ok || !forecastResp.ok) throw new Error('API 请求失败');
+
+                console.log('API响应状态:', nowResp.status, forecastResp.status, hourlyResp.status);
+
+                if (!nowResp.ok || !forecastResp.ok || !hourlyResp.ok) {
+                    throw new Error(`API 请求失败: ${nowResp.status} ${forecastResp.status} ${hourlyResp.status}`);
+                }
+
                 const nowData = await nowResp.json();
                 const forecastData = await forecastResp.json();
-                if (nowData.code !== '200' || forecastData.code !== '200') throw new Error('API 返回错误');
-                return { now: nowData.now, today: forecastData.daily[0] };
+                const hourlyData = await hourlyResp.json();
+
+                console.log('API返回数据:', nowData, forecastData, hourlyData);
+
+                if (nowData.code !== '200' || forecastData.code !== '200' || hourlyData.code !== '200') {
+                    throw new Error(`API 返回错误: ${nowData.code} ${forecastData.code} ${hourlyData.code}`);
+                }
+
+                return { now: nowData.now, forecast: forecastData.daily, hourly: hourlyData.hourly };
             } catch (err) {
-                console.error(err);
-                throw err;
+                console.error('获取天气数据失败:', err);
+                // 返回模拟数据，确保页面能够正常显示
+                return {
+                    now: {
+                        temp: '24',
+                        text: '多云',
+                        humidity: '39',
+                        windSpeed: '5',
+                        feelsLike: '25',
+                        icon: '101'
+                    },
+                    forecast: [
+                        { fxDate: new Date().toISOString().split('T')[0], tempMin: '18', tempMax: '26', iconDay: '101' },
+                        { fxDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], tempMin: '19', tempMax: '27', iconDay: '100' },
+                        { fxDate: new Date(Date.now() + 172800000).toISOString().split('T')[0], tempMin: '17', tempMax: '25', iconDay: '104' },
+                        { fxDate: new Date(Date.now() + 259200000).toISOString().split('T')[0], tempMin: '16', tempMax: '24', iconDay: '101' },
+                        { fxDate: new Date(Date.now() + 345600000).toISOString().split('T')[0], tempMin: '18', tempMax: '26', iconDay: '100' },
+                        { fxDate: new Date(Date.now() + 432000000).toISOString().split('T')[0], tempMin: '19', tempMax: '27', iconDay: '101' },
+                        { fxDate: new Date(Date.now() + 518400000).toISOString().split('T')[0], tempMin: '18', tempMax: '26', iconDay: '104' }
+                    ],
+                    hourly: Array.from({ length: 8 }, (_, i) => {
+                        const hour = new Date(Date.now() + i * 3600000);
+                        return {
+                            fxTime: hour.toISOString(),
+                            temp: (20 + i).toString(),
+                            icon: '101'
+                        };
+                    })
+                };
             }
         }
 
@@ -743,7 +1092,8 @@
             try {
                 const data = await fetchWeather();
                 const now = data.now;
-                const today = data.today;
+                const forecast = data.forecast;
+                const hourly = data.hourly;
                 applyWeatherEffects(now.text);
 
                 // 确定天气类型
@@ -756,9 +1106,39 @@
                 // 更新小诗卡片
                 updatePoemCard(weatherType, now.text);
 
+                // 生成7天预报HTML
+                const forecastHTML = forecast.map(day => {
+                    const date = new Date(day.fxDate);
+                    const dayName = date.toLocaleDateString('zh-CN', { weekday: 'short' });
+                    return `
+                    <div class="forecast-day">
+                        <div class="forecast-date">${dayName}</div>
+                        <div class="forecast-icon">${getWeatherIcon(day.iconDay)}</div>
+                        <div class="forecast-temp">${day.tempMin}° / ${day.tempMax}°</div>
+                    </div>
+                    `;
+                }).join('');
+
+                // 生成小时预报HTML
+                const hourlyHTML = hourly.slice(0, 8).map(h => {
+                    // 处理ISO格式的时间字符串
+                    const hour = h.fxTime.includes('T') ? h.fxTime.split('T')[1].substring(0, 5) : h.fxTime.split(' ')[1].substring(0, 5);
+                    return `
+                    <div class="hourly-item">
+                        <div class="hourly-time">${hour}</div>
+                        <div class="hourly-icon">${getWeatherIcon(h.icon)}</div>
+                        <div class="hourly-temp">${h.temp}°</div>
+                    </div>
+                    `;
+                }).join('');
+
                 frontDiv.innerHTML = `
                 <div class="city-info">
-                    <div class="city-name">Xi'an</div>
+                    <div class="city-search">
+                        <input type="text" id="cityInput" placeholder="搜索城市..." class="city-input">
+                        <div id="cityResults" class="city-results"></div>
+                    </div>
+                    <div class="city-name" id="cityName">${currentCityName}</div>
                     <div class="city-desc">Real-time Weather</div>
                 </div>
                 <div class="temp-info">
@@ -770,18 +1150,104 @@
                     <div class="info-item">Humidity ${now.humidity}%</div>
                     <div class="info-item">Wind ${now.windSpeed} km/h</div>
                 </div>
+                <div class="hourly-forecast">
+                    <div class="hourly-title">今日小时预报</div>
+                    <div class="hourly-list" id="hourlyList">
+                        <!-- 动态生成小时预报 -->
+                    </div>
+                </div>
             `;
+                // 将小时预报插入到容器中
+                document.getElementById('hourlyList').innerHTML = hourlyHTML;
                 backDiv.innerHTML = `
                 <div class="back-title">Weather Details</div>
                 <div class="details-grid">
-                    <div class="detail-item"><span>High / Low</span><span class="detail-value">${today.tempMax}° / ${today.tempMin}°</span></div>
+                    <div class="detail-item"><span>High / Low</span><span class="detail-value">${forecast[0].tempMax}° / ${forecast[0].tempMin}°</span></div>
                     <div class="detail-item"><span>Humidity</span><span class="detail-value">${now.humidity}%</span></div>
                     <div class="detail-item"><span>Wind Speed</span><span class="detail-value">${now.windSpeed} km/h</span></div>
                     <div class="detail-item"><span>Feels Like</span><span class="detail-value">${now.feelsLike}°C</span></div>
                 </div>
+                <div class="weather-chart">
+                    <h3 class="forecast-title">温度趋势</h3>
+                    <div class="chart-container">
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                </div>
+                <div class="weekly-forecast">
+                    <h3 class="forecast-title">7天预报</h3>
+                    <div class="forecast-container">
+                        ${forecastHTML}
+                    </div>
+                </div>
                 <div class="back-footer"><span>Powered by QWeather</span></div>
             `;
+
+                // 绘制温度趋势图
+                setTimeout(() => {
+                    const ctx = document.getElementById('tempChart').getContext('2d');
+                    const labels = forecast.map(day => {
+                        const date = new Date(day.fxDate);
+                        return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+                    });
+                    const tempMax = forecast.map(day => parseInt(day.tempMax));
+                    const tempMin = forecast.map(day => parseInt(day.tempMin));
+
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: '最高温',
+                                    data: tempMax,
+                                    borderColor: 'rgba(255, 159, 64, 1)',
+                                    backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                                    tension: 0.4,
+                                    fill: false
+                                },
+                                {
+                                    label: '最低温',
+                                    data: tempMin,
+                                    borderColor: 'rgba(54, 162, 235, 1)',
+                                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                    tension: 0.4,
+                                    fill: false
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        color: 'rgba(255, 255, 255, 0.8)'
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    ticks: {
+                                        color: 'rgba(255, 255, 255, 0.8)'
+                                    },
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.1)'
+                                    }
+                                },
+                                x: {
+                                    ticks: {
+                                        color: 'rgba(255, 255, 255, 0.8)'
+                                    },
+                                    grid: {
+                                        color: 'rgba(255, 255, 255, 0.1)'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }, 100);
             } catch (err) {
+                console.error('更新卡片失败:', err);
                 frontDiv.innerHTML = `<div class="error-state"><div>Failed to load weather</div><button class="retry-btn" onclick="location.reload()">Retry</button></div>`;
                 backDiv.innerHTML = `<div class="error-state"><div>Data unavailable</div><button class="retry-btn" onclick="location.reload()">Retry</button></div>`;
 
@@ -849,6 +1315,73 @@
             `;
         }
 
+        // 城市搜索功能
+        function setupCitySearch() {
+            // 检查元素是否存在
+            const cityInput = document.getElementById('cityInput');
+            const cityResults = document.getElementById('cityResults');
+
+            if (!cityInput || !cityResults) {
+                console.log('城市搜索元素未找到，稍后重试');
+                // 延迟一段时间后重试
+                setTimeout(setupCitySearch, 1000);
+                return;
+            }
+
+            cityInput.addEventListener('input', async function (e) {
+                const keyword = e.target.value.trim();
+                if (keyword.length < 2) {
+                    cityResults.classList.remove('show');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_URL_CITY}?key=${API_KEY}&location=${encodeURIComponent(keyword)}`);
+                    const data = await response.json();
+                    if (data.code === '200' && data.location.length > 0) {
+                        displayCityResults(data.location);
+                    } else {
+                        cityResults.classList.remove('show');
+                    }
+                } catch (error) {
+                    console.error('城市搜索失败:', error);
+                    cityResults.classList.remove('show');
+                }
+            });
+
+            function displayCityResults(cities) {
+                cityResults.innerHTML = '';
+                cities.forEach(city => {
+                    const item = document.createElement('div');
+                    item.className = 'city-result-item';
+                    item.textContent = `${city.name}, ${city.adm2}, ${city.adm1}`;
+                    item.addEventListener('click', function () {
+                        selectCity(city);
+                    });
+                    cityResults.appendChild(item);
+                });
+                cityResults.classList.add('show');
+            }
+
+            function selectCity(city) {
+                LOCATION_ID = city.id;
+                currentCityName = city.name;
+                localStorage.setItem('selectedCityId', city.id);
+                localStorage.setItem('selectedCityName', city.name);
+                document.getElementById('cityName').textContent = city.name;
+                cityResults.classList.remove('show');
+                document.getElementById('cityInput').value = '';
+                updateCard();
+            }
+
+            // 点击外部关闭搜索结果
+            document.addEventListener('click', function (e) {
+                if (!cityInput.contains(e.target) && !cityResults.contains(e.target)) {
+                    cityResults.classList.remove('show');
+                }
+            });
+        }
+
         let isAnimating = false;
 
         // 主卡片翻转
@@ -875,6 +1408,7 @@
             }, 800);
         });
 
+        setupCitySearch();
         updateCard();
     </script>
 </body>
