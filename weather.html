@@ -250,8 +250,18 @@
         /* 城市信息（二级文字） */
         .city-info {
             align-self: flex-start;
+            width: 100%;
             margin-bottom: 32px;
             animation: fadeInUp 0.6s ease 0.1s both;
+        }
+
+        /* 顶部搜索框 */
+        .top-search {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            width: 350px;
         }
 
         /* 城市搜索样式 */
@@ -263,15 +273,18 @@
 
         .city-input {
             width: 100%;
-            padding: 8px 12px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 16px;
+            max-width: 350px;
+            padding: 16px 24px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 9999px;
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(24px);
             color: #fff;
             font-size: 14px;
             outline: none;
             transition: all 0.3s ease;
+            box-sizing: border-box;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         }
 
         .city-input::placeholder {
@@ -279,8 +292,9 @@
         }
 
         .city-input:focus {
-            border-color: rgba(255, 255, 255, 0.5);
+            border-color: rgba(255, 255, 255, 0.4);
             background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
         }
 
         .city-results {
@@ -907,6 +921,14 @@
         <div class="mist"></div>
     </div>
 
+    <!-- 顶部搜索框 -->
+    <div class="top-search">
+        <div class="city-search">
+            <input type="text" id="cityInput" placeholder="搜索城市..." class="city-input">
+            <div id="cityResults" class="city-results"></div>
+        </div>
+    </div>
+
     <!-- 小卡片 -->
     <div class="weather-card-guide">
         <div class="card-inner" id="poemCard">
@@ -955,10 +977,14 @@
         const API_KEY = '0d8df58ac126426a949380cba287f26e';
         let LOCATION_ID = localStorage.getItem('selectedCityId') || '101110101';
         let currentCityName = localStorage.getItem('selectedCityName') || "Xi'an";
-        const API_URL_NOW = 'https://n83wt3ehbm.re.qweatherapi.com/v7/weather/now';
-        const API_URL_3D = 'https://n83wt3ehbm.re.qweatherapi.com/v7/weather/3d';
-        const API_URL_24H = 'https://n83wt3ehbm.re.qweatherapi.com/v7/weather/24h';
-        const API_URL_CITY = 'https://n83wt3ehbm.re.qweatherapi.com/v2/city/lookup';
+        // 使用标准的和风天气API地址
+        const API_URL_NOW = 'https://devapi.qweather.com/v7/weather/now';
+        const API_URL_3D = 'https://devapi.qweather.com/v7/weather/3d';
+        const API_URL_24H = 'https://devapi.qweather.com/v7/weather/24h';
+        const API_URL_CITY = 'https://geoapi.qweather.com/v2/city/lookup';
+
+        // 使用CORS代理
+        const corsProxy = 'https://cors.bridged.cc/';
 
         const bgVideo = document.getElementById('bgVideo');
 
@@ -999,15 +1025,29 @@
             }
         }
 
-        function applyWeatherEffects(desc) {
+        function applyWeatherEffects(desc, icon) {
             const body = document.body;
             body.className = '';
 
-            const lower = desc.toLowerCase();
             let weatherType = 'cloudy';
-            if (lower.includes('晴')) weatherType = 'sunny';
-            else if (lower.includes('雨')) weatherType = 'rainy';
-            else if (lower.includes('云') || lower.includes('阴')) weatherType = 'cloudy';
+
+            // 首先根据图标代码判断天气类型（优先级更高）
+            if (icon) {
+                const sunny = ['100', '101', '102', '103'];
+                const rainy = ['300', '301', '302', '303', '304', '305', '306', '307', '308', '309', '310', '311', '312', '313'];
+                if (sunny.includes(icon)) weatherType = 'sunny';
+                else if (rainy.includes(icon)) weatherType = 'rainy';
+            }
+
+            // 如果图标代码判断不出来，再根据描述判断
+            if (weatherType === 'cloudy' && desc) {
+                const lower = desc.toLowerCase();
+                if (lower.includes('晴')) weatherType = 'sunny';
+                else if (lower.includes('雨')) weatherType = 'rainy';
+                else if (lower.includes('云') || lower.includes('阴')) weatherType = 'cloudy';
+            }
+
+            console.log('天气类型:', weatherType, '描述:', desc, '图标:', icon);
 
             body.classList.add(`weather-${weatherType}`);
             setWeatherVideo(weatherType);
@@ -1029,11 +1069,12 @@
                 console.log('开始获取天气数据...');
                 console.log('API_KEY:', API_KEY);
                 console.log('LOCATION_ID:', LOCATION_ID);
+                console.log('当前城市:', currentCityName);
 
                 const [nowResp, forecastResp, hourlyResp] = await Promise.all([
-                    fetchWithTimeout(`${API_URL_NOW}?location=${LOCATION_ID}&key=${API_KEY}`),
-                    fetchWithTimeout(`${API_URL_3D}?location=${LOCATION_ID}&key=${API_KEY}`),
-                    fetchWithTimeout(`${API_URL_24H}?location=${LOCATION_ID}&key=${API_KEY}`)
+                    fetchWithTimeout(`${corsProxy}${API_URL_NOW}?location=${LOCATION_ID}&key=${API_KEY}`),
+                    fetchWithTimeout(`${corsProxy}${API_URL_3D}?location=${LOCATION_ID}&key=${API_KEY}`),
+                    fetchWithTimeout(`${corsProxy}${API_URL_24H}?location=${LOCATION_ID}&key=${API_KEY}`)
                 ]);
 
                 console.log('API响应状态:', nowResp.status, forecastResp.status, hourlyResp.status);
@@ -1090,11 +1131,25 @@
             const frontDiv = document.getElementById('frontContent');
             const backDiv = document.getElementById('backContent');
             try {
+                // 显示加载状态
+                frontDiv.innerHTML = `
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <div>Loading weather...</div>
+                    </div>
+                `;
+                backDiv.innerHTML = `
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <div>Loading...</div>
+                    </div>
+                `;
+
                 const data = await fetchWeather();
                 const now = data.now;
                 const forecast = data.forecast;
                 const hourly = data.hourly;
-                applyWeatherEffects(now.text);
+                applyWeatherEffects(now.text, now.icon);
 
                 // 确定天气类型
                 const lower = now.text.toLowerCase();
@@ -1134,10 +1189,6 @@
 
                 frontDiv.innerHTML = `
                 <div class="city-info">
-                    <div class="city-search">
-                        <input type="text" id="cityInput" placeholder="搜索城市..." class="city-input">
-                        <div id="cityResults" class="city-results"></div>
-                    </div>
                     <div class="city-name" id="cityName">${currentCityName}</div>
                     <div class="city-desc">Real-time Weather</div>
                 </div>
@@ -1157,8 +1208,13 @@
                     </div>
                 </div>
             `;
-                // 将小时预报插入到容器中
-                document.getElementById('hourlyList').innerHTML = hourlyHTML;
+                // 等待DOM更新后插入小时预报
+                setTimeout(() => {
+                    const hourlyList = document.getElementById('hourlyList');
+                    if (hourlyList) {
+                        hourlyList.innerHTML = hourlyHTML;
+                    }
+                }, 0);
                 backDiv.innerHTML = `
                 <div class="back-title">Weather Details</div>
                 <div class="details-grid">
@@ -1248,8 +1304,17 @@
                 }, 100);
             } catch (err) {
                 console.error('更新卡片失败:', err);
-                frontDiv.innerHTML = `<div class="error-state"><div>Failed to load weather</div><button class="retry-btn" onclick="location.reload()">Retry</button></div>`;
-                backDiv.innerHTML = `<div class="error-state"><div>Data unavailable</div><button class="retry-btn" onclick="location.reload()">Retry</button></div>`;
+                frontDiv.innerHTML = `
+                    <div class="city-info">
+                        <div class="city-name" id="cityName">${currentCityName}</div>
+                        <div class="city-desc">Real-time Weather</div>
+                    </div>
+                    <div class="error-state"><div>Failed to load weather: ${err.message}</div><button class="retry-btn" onclick="updateCard()">Retry</button></div>
+                `;
+                backDiv.innerHTML = `
+                    <div class="back-title">Weather Details</div>
+                    <div class="error-state"><div>Data unavailable: ${err.message}</div><button class="retry-btn" onclick="updateCard()">Retry</button></div>
+                `;
 
                 // 错误时默认显示多云诗句
                 updatePoemCard('cloudy', '多云');
@@ -1328,26 +1393,146 @@
                 return;
             }
 
-            cityInput.addEventListener('input', async function (e) {
+            // 阻止城市搜索区域的点击事件冒泡，避免触发卡片翻转
+            cityInput.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+
+            cityResults.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+
+            // 防抖计时器
+            let searchTimeout;
+
+            // 监听回车事件
+            cityInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.stopPropagation();
+                    const keyword = e.target.value.trim();
+                    if (keyword.length >= 2) {
+                        searchCity(keyword);
+                    }
+                }
+            });
+
+            cityInput.addEventListener('input', function (e) {
+                e.stopPropagation();
                 const keyword = e.target.value.trim();
+
+                // 清除之前的防抖计时器
+                clearTimeout(searchTimeout);
+
                 if (keyword.length < 2) {
                     cityResults.classList.remove('show');
                     return;
                 }
 
+                // 添加防抖，避免输入时频繁触发搜索
+                searchTimeout = setTimeout(async function () {
+                    try {
+                        // 显示加载状态（不禁用输入框，只改变占位符）
+                        const originalPlaceholder = cityInput.placeholder;
+                        cityInput.placeholder = '搜索中...';
+
+                        // 使用CORS代理
+                        const apiUrl = `${API_URL_CITY}?location=${encodeURIComponent(keyword)}&key=${API_KEY}`;
+                        const proxyUrl = `${corsProxy}${apiUrl}`;
+
+                        console.log('城市搜索API调用:', apiUrl);
+                        console.log('使用CORS代理:', proxyUrl);
+
+                        const response = await fetch(proxyUrl);
+                        console.log('API响应状态:', response.status);
+
+                        if (!response.ok) {
+                            throw new Error(`API请求失败: ${response.status}`);
+                        }
+
+                        // 先获取响应文本，检查是否是有效的JSON
+                        const responseText = await response.text();
+                        console.log('API响应文本:', responseText);
+
+                        let data;
+                        try {
+                            data = JSON.parse(responseText);
+                        } catch (jsonError) {
+                            throw new Error(`JSON解析失败: ${jsonError.message}`);
+                        }
+
+                        console.log('城市搜索结果:', data);
+
+                        if (data.code === '200' && data.location && data.location.length > 0) {
+                            displayCityResults(data.location);
+                        } else {
+                            // 搜索失败提示
+                            cityResults.innerHTML = '<div class="city-result-item">未找到城市</div>';
+                            cityResults.classList.add('show');
+                        }
+                    } catch (error) {
+                        console.error('城市搜索失败:', error);
+                        // 搜索失败提示
+                        cityResults.innerHTML = `<div class="city-result-item">搜索失败: ${error.message}</div>`;
+                        cityResults.classList.add('show');
+                    } finally {
+                        // 恢复输入框状态
+                        cityInput.placeholder = '搜索城市...';
+                    }
+                }, 300); // 300ms防抖延迟
+            });
+
+            // 搜索城市函数
+            async function searchCity(keyword) {
                 try {
-                    const response = await fetch(`${API_URL_CITY}?key=${API_KEY}&location=${encodeURIComponent(keyword)}`);
-                    const data = await response.json();
-                    if (data.code === '200' && data.location.length > 0) {
-                        displayCityResults(data.location);
+                    // 显示加载状态
+                    cityInput.placeholder = '搜索中...';
+                    cityInput.disabled = true;
+
+                    // 使用CORS代理
+                    const apiUrl = `${API_URL_CITY}?location=${encodeURIComponent(keyword)}&key=${API_KEY}`;
+                    const proxyUrl = `${corsProxy}${apiUrl}`;
+
+                    console.log('城市搜索API调用:', apiUrl);
+                    console.log('使用CORS代理:', proxyUrl);
+
+                    const response = await fetch(proxyUrl);
+                    console.log('API响应状态:', response.status);
+
+                    if (!response.ok) {
+                        throw new Error(`API请求失败: ${response.status}`);
+                    }
+
+                    // 先获取响应文本，检查是否是有效的JSON
+                    const responseText = await response.text();
+                    console.log('API响应文本:', responseText);
+
+                    let data;
+                    try {
+                        data = JSON.parse(responseText);
+                    } catch (jsonError) {
+                        throw new Error(`JSON解析失败: ${jsonError.message}`);
+                    }
+
+                    console.log('城市搜索结果:', data);
+
+                    if (data.code === '200' && data.location && data.location.length > 0) {
+                        // 取第一个结果的id
+                        const city = data.location[0];
+                        selectCity(city);
                     } else {
-                        cityResults.classList.remove('show');
+                        // 搜索失败提示
+                        alert('未找到该城市');
                     }
                 } catch (error) {
                     console.error('城市搜索失败:', error);
-                    cityResults.classList.remove('show');
+                    // 搜索失败提示
+                    alert(`搜索失败: ${error.message}`);
+                } finally {
+                    // 恢复输入框状态
+                    cityInput.placeholder = '搜索城市...';
+                    cityInput.disabled = false;
                 }
-            });
+            }
 
             function displayCityResults(cities) {
                 cityResults.innerHTML = '';
@@ -1355,7 +1540,8 @@
                     const item = document.createElement('div');
                     item.className = 'city-result-item';
                     item.textContent = `${city.name}, ${city.adm2}, ${city.adm1}`;
-                    item.addEventListener('click', function () {
+                    item.addEventListener('click', function (e) {
+                        e.stopPropagation(); // 阻止事件冒泡
                         selectCity(city);
                     });
                     cityResults.appendChild(item);
@@ -1364,11 +1550,16 @@
             }
 
             function selectCity(city) {
+                console.log('选择城市:', city);
                 LOCATION_ID = city.id;
                 currentCityName = city.name;
                 localStorage.setItem('selectedCityId', city.id);
                 localStorage.setItem('selectedCityName', city.name);
-                document.getElementById('cityName').textContent = city.name;
+                // 直接更新城市名称，不需要等待updateCard
+                const cityNameElement = document.getElementById('cityName');
+                if (cityNameElement) {
+                    cityNameElement.textContent = city.name;
+                }
                 cityResults.classList.remove('show');
                 document.getElementById('cityInput').value = '';
                 updateCard();
